@@ -165,7 +165,6 @@ void solve()
   while (cin >> S >> M >> B >> N >> I >> F >> D >> P)
   {
 
-    cout << S << M << B << N << I << F << D << P;
 
     RNG rng(S);
 
@@ -174,26 +173,32 @@ void solve()
     
     T.insert(T, S%U);
 
-    for (llu i = 0; i < B; i++) {
+    for (llu i = 1; i < B; i++) {
+      rng.next();
       T.insert(T, rng.next()%U);
     }
 
-    llu X = rng.next() % (I+F+D);
-    if (X < I) {
-      X = rng.next() % U;
-      T.insert(T, X);
-    } else if (I <= X && X < (I+F)) {
-      X = rng.next() % U;
-      T.sucessor(T, X);
-    } else {
-      llu Y = rng.next() % U;
-      llu aux = T.sucessor(T, Y);
-      if (aux) {
-        X = aux;
+    for (llu i = 0; i < N; i++){
+      llu X = rng.next() % (I+F+D);
+      if (X < I) {
+        X = rng.next() % U;
+        T.insert(T, X);
+        cout << "I" << endl;
+      } else if (I <= X && X < (I+F)) {
+        X = rng.next() % U;
+        T.sucessor(T, X);
+        cout << "S" << endl;
       } else {
-        X = Y;
+        llu Y = rng.next() % U;
+        llu aux = T.sucessor(T, Y);
+        if (aux) {
+          X = aux;
+        } else {
+          X = Y;
+        }
+        T.remove(T, X);
+        cout << "D" << endl;
       }
-      T.remove(T, X);
     }
   }
 }
