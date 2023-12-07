@@ -1,205 +1,235 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-typedef uint32_t llu;
-
-// g++ -std=c++17 emdeBoas.cpp -o emdeBoas && time ./emdeBoas < input.txt
+typedef long long ll;
 
 class VEB
 {
 public:
-  llu m, M;
+  ll m, M;
   
   VEB *summary;  
-  VEB *cluster;
-  llu u;
+  VEB **cluster;
+  ll u;
+  ll subSize;
 
-  VEB(llu M) {
-
+  VEB(ll U) {
+    u = U;
+    m = U;
+    M = -1;
+    subSize = (ll)sqrt(u);
+    
+    if (u == 2)
+    {
+      this -> summary = NULL;
+      this -> cluster = NULL;
+    }
+    
+    else
+    {
+      summary = new VEB(subSize);
+      cluster = new VEB*[subSize];
+      for ( int i = 0; i < subSize; ++i ) cluster[i] = new VEB(subSize);
+    }
   }
 
-  void insert(VEB V, llu x)
+  ll insert(ll x)
   {
-    if(V.u == 2) {
-      V.m = min(V.m, x);
-      V.M = max(V.M, x);
-      return;
+    if (x == m || x == M) {
+      return 0;
+    }
+
+    if(u == 2) {
+      m = min(m, x);
+      M = max(M, x);
+      return 1;
     } 
-    if (V.m == V.u) {
-      V.m, V.M = x ,x;
-      return;
-    }
-    if (x < V.m) {
-      llu aux;
-      aux = V.m;
-      V.m = x;
-      x = aux;
+
+    if (m == u) {
+      m = x;
+      M = x;
+      return 1;
     }
 
-    V.M = max(V.M, x);
-
-    llu subSize = (llu)sqrt(u);
-    llu h = x / subSize, l = x % subSize;
-
-    if (V.cluster[h].m == V.cluster[h].u) {
-      insert(*(V.summary), h);
+    if (x < m) {
+      swap(x, m);
     }
-    insert(V.cluster[h], l);
+
+    M = max(M, x);
+
+    ll h = x / subSize, l = x % subSize;
+    
+    
+    if (cluster[h]->m == cluster[h]->u) {
+      summary->insert(h);
+    }
+    ll aux2 = cluster[h]->insert(l);
+    if (aux2 == 0) return 0;
+    return aux2+1;
   }
 
-  float lowerSqrt ( int val )
+  ll index ( ll high, ll low )
   {
-    return pow ( 2, floor ( log2 ( val )  / 2 ) );
+    return high * subSize + low;
   }
 
-  int index ( VEB * tree, int high, int low )
+  ll sucessor(ll x)
   {
-    return high * lowerSqrt ( tree->u ) + low;
-  }
+    if (x < m) {
+      return m;
+    }    
 
-  void remove(VEB V, llu x)
-  {
-    if (V.u == 2) {
-      if (x == V.m) {
-        if (V.M != V.m) {
-          V.m = V.M;
-        } else {
-          // n sei se ta certo
-          V.m = V.u;
-        }
-      }
-      if (x == V.M) {
-        if (V.m != V.u) {
-          V.M = V.m;
-        } else {
-          V.M = (-1);
-        }
-      }
-      return;
+    if (x > M) {
+      return u;
+    }       
+
+    if (u == 2) {
+      if (x == 0 && M == 1) return 1;
+      else return 2;
     }
-    if (x == V.m) {
-
-      llu i = V.summary->m;
-      if (i == V.summary->u){
-        V.m, V.M = V.u, -1;
-        return;
-      } else {
-        // V.m = V.index(i, V.cluster[i].m);
-        x = V.m;
-      }
-    }
-    llu subSize = (llu)sqrt(u);
-    llu h = x / subSize, l = x % subSize;
-    remove(V.cluster[h], l);
-
-    if (V.cluster[h].m == V.cluster[h].u) {
-      remove(*(V.summary), h);
-    }
-
-    if(x == V.M) {
-      llu i = V.summary->M;
-      if (i == -1) {
-        V.M = V.m;
-      } else {
-        V.M = index(&V, i, V.cluster[i].M);
-      }
-    }
-  }
-
-
-
-  llu sucessor(VEB V, llu x)
-  {
-    if (V.u == 2) {
-      if (x == -1 && V.m == 0) return 0;
-      else if (x <= 0 && V.M == 1) return 1;
-      else return V.u;
-    }
-    llu subSize = (llu)sqrt(u);
-    llu h = x / subSize, l = x % subSize;
-
-    if (l < V.cluster[h].M) {
-      llu s = sucessor(V.cluster[h], l);
-      return index(&V, h, s);
+     
+    ll h = x / subSize;
+    ll l = x % subSize;
+    
+    if (l < cluster[h]->M) {
+      ll s = cluster[h]->sucessor(l);
+      return index(h, s);
     } else {
-      llu h = sucessor(*(V.summary), h);
-      if (h == V.summary->u) {
-        return V.u;
+      h = summary->sucessor(h);
+      if (h == summary->u) {
+        return u;
       } else {
-        llu s = V.cluster[h].m;
-        return index(&V, h, s);
+        ll s = cluster[h]->m;
+        return index(h, s);
       }
     }
-    // return 1;
+  }
+
+
+   ll remove(ll x)
+  {
+    ll aux = 0;
+
+    if (u == 2) {
+      if (x == m) {
+        aux = 1;
+        m = M != m ? M : u;
+      }
+      if (x == M) {
+        aux = 1;
+        M = m != u ? m : -1;
+      }
+      return aux;
+    }
+
+    if (x == m) {
+
+      ll i = summary->m;
+      if (i == summary->u){
+        m = u;
+        M = -1;
+        return 1;
+      } 
+
+      m = index(i, cluster[i]->m);
+      x = m;
+    }
+
+    ll h = x / subSize, l = x % subSize;
+
+    ll aux2 = (cluster[h]->remove(l));
+    if (aux2 != 0) aux = aux + aux2 + 1;
+
+    if (cluster[h]->m == cluster[h]->u) {
+      summary->remove(h);
+    }
+
+    if(x == M) {
+      ll i = summary->M;
+      if (i == -1) {
+        M = m;
+      } else {
+        M = index(i, cluster[i]->M);
+      }
+    }
+    return aux;
   }
 };
+
+
 
 class RNG
 {
 public:
-  RNG(uint32_t S) : current(S) {}
+  bool isFirst = true;
 
-  uint32_t next()
+  RNG(ll S) : current(S) {}
+
+  ll next()
   {
-    unsigned long long num = 1ULL << 32;
+    if (isFirst) {
+      isFirst = false;
+      return current;
+    }
+    long long num = 1ULL << 32;
     current = (1664525 * current + 1013904223) % num;
     return current;
   }
 
 private:
-  uint32_t current;
+  ll current;
 };
 
-llu pow2(int M) {
-    if (M == 0) {
-        return 1;
-    } else {
-        return 1LL << (1 << (M - 1));
-    }
+
+
+ll pow2(ll M) {
+  if (M == 0) {
+    return 1;
+  } else {
+    return 1 << (1 << (M ));
+  }
 }
 
 void solve()
 {
-  uint32_t S, M, B, N, I, F, D, P;
+  ll S, M, B, N, I, F, D, P;
 
   while (cin >> S >> M >> B >> N >> I >> F >> D >> P)
   {
-
-
     RNG rng(S);
 
-    llu U = pow2(M);
-    VEB T(U);
-    
-    T.insert(T, S%U);
+    ll U = pow2(M);
 
-    for (llu i = 1; i < B; i++) {
-      rng.next();
-      T.insert(T, rng.next()%U);
+    VEB T(U);
+
+    for (ll i = 0; i < B; i++) {
+      T.insert(rng.next()%U);
     }
 
-    for (llu i = 0; i < N; i++){
-      llu X = rng.next() % (I+F+D);
+    for (ll i = 0; i < N; i++){
+      ll X = rng.next() % (I+F+D);
+
       if (X < I) {
-        X = rng.next() % U;
-        T.insert(T, X);
-        cout << "I" << endl;
+        ll x = rng.next() % U;
+        ll result = T.insert(x);
+        if(i % P == 0) cout << "I " << result << endl;
       } else if (I <= X && X < (I+F)) {
-        X = rng.next() % U;
-        T.sucessor(T, X);
-        cout << "S" << endl;
+       ll X = rng.next() % U;
+
+        if(i % P == 0) cout << "S " << T.sucessor(X) << endl;
       } else {
-        llu Y = rng.next() % U;
-        llu aux = T.sucessor(T, Y);
-        if (aux) {
+        ll Y = rng.next() % U;
+        ll aux = T.sucessor(Y);
+        if (aux < U) {
           X = aux;
         } else {
           X = Y;
         }
-        T.remove(T, X);
-        cout << "D" << endl;
+        ll result = T.remove(X);
+        if(i % P == 0) cout << "D " << result << endl;
       }
     }
+
   }
 }
 
